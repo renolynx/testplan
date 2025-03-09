@@ -1,0 +1,2520 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>野山道场 - 系统架构与工作计划</title>
+    <!-- Google Fonts -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500&family=Noto+Sans+SC:wght@100;200;300;400&display=swap">
+    <style>
+        :root {
+            /* 基础色调 */
+            --text-primary: #444342;
+            --text-secondary: #7a7676;
+            --text-subtle: #9c9a99;
+            
+            /* 卡片与界面元素 */
+            --card-bg: rgba(255, 255, 255, 0.5);
+            --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+            --surface-border: rgba(0, 0, 0, 0.04);
+            
+            /* 默认黄昏/日落主题色 */
+            --gradient-top: #f2e9e4;
+            --gradient-middle: #f5e1d3;
+            --gradient-bottom: #e7c9b9;
+            --accent-primary: rgba(244, 182, 121, 0.7);
+            --accent-secondary: rgba(231, 212, 185, 0.7);
+            --accent-tertiary: rgba(226, 156, 143, 0.4);
+            
+            /* 微妙纹理透明度 */
+            --texture-opacity: 0.03;
+            
+            /* 量度与间距 */
+            --space-xxs: 0.25rem;
+            --space-xs: 0.5rem;
+            --space-sm: 1rem;
+            --space-md: 1.5rem;
+            --space-lg: 2.5rem;
+            --space-xl: 4rem;
+            --space-xxl: 6rem;
+            
+            /* 字体设置 */
+            --font-main: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif;
+            --font-weight-thin: 200;
+            --font-weight-light: 300;
+            --font-weight-regular: 400;
+            --font-weight-medium: 500;
+            
+            /* 文字尺寸 */
+            --text-xs: 0.75rem;
+            --text-sm: 0.875rem;
+            --text-base: 1rem;
+            --text-md: 1.125rem;
+            --text-lg: 1.5rem;
+            --text-xl: 2rem;
+            --text-xxl: 3rem;
+            
+            /* 圆角 */
+            --radius-sm: 6px;
+            --radius-md: 12px;
+            --radius-lg: 20px;
+            --radius-full: 9999px;
+            
+            /* 过渡动画 */
+            --transition-slow: 1.5s;
+            --transition-medium: 0.8s;
+            --transition-fast: 0.3s;
+            
+            /* 五行色彩 */
+            --color-metal: #E0C097;
+            --color-wood: #7BA98D;
+            --color-water: #6A8CAF;
+            --color-fire: #E07966;
+            --color-earth: #BF9762;
+            
+            /* Action Card系统色彩 */
+            --wood-primary: #2D5F3E;
+            --wood-secondary: #A2D5AC;
+            --water-primary: #2B4570;
+            --water-secondary: #A7CFDF;
+            --metal-primary: #B3845F;
+            --metal-secondary: #E5D0B1;
+            --fire-primary: #A13941;
+            --fire-secondary: #F5B7B1;
+            --earth-primary: #8D6E63;
+            --earth-secondary: #D7CCC8;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: var(--font-main);
+            font-weight: var(--font-weight-light);
+            color: var(--text-primary);
+            line-height: 1.6;
+            overflow-x: hidden;
+            letter-spacing: -0.01em;
+            background: linear-gradient(180deg, 
+                var(--gradient-top) 0%, 
+                var(--gradient-middle) 50%, 
+                var(--gradient-bottom) 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: var(--space-md);
+            padding-top: var(--space-xl);
+        }
+        
+        /* 微妙的纸张纹理 */
+        .paper-texture {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: var(--texture-opacity);
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        /* 主题选择器容器 */
+        .theme-selector {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            align-items: center;
+            background: var(--card-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-radius: var(--radius-full);
+            padding: 4px 12px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--surface-border);
+            z-index: 1000;
+            opacity: 0.85;
+            transition: opacity var(--transition-fast);
+        }
+        
+        .theme-selector:hover {
+            opacity: 1;
+        }
+        
+        .theme-label {
+            font-size: var(--text-xs);
+            font-weight: var(--font-weight-light);
+            color: var(--text-secondary);
+            margin-right: 10px;
+            letter-spacing: 0.05em;
+        }
+        
+        .theme-slider-container {
+            position: relative;
+            width: 120px;
+            height: 24px;
+        }
+        
+        .theme-slider {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, 
+                #c9d6df 0%, 
+                #f0e9d3 33%, 
+                #e7c9b9 66%, 
+                #abb4ce 100%);
+            outline: none;
+            border-radius: var(--radius-full);
+        }
+        
+        .theme-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            border-radius: var(--radius-full);
+            background: #fff;
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .theme-slider::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .theme-slider::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            border-radius: var(--radius-full);
+            background: #fff;
+            border: 1px solid rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: pointer;
+            transition: all var(--transition-fast);
+        }
+        
+        .theme-slider::-moz-range-thumb:hover {
+            transform: scale(1.2);
+        }
+        
+        .theme-name {
+            position: absolute;
+            bottom: -18px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: var(--text-xs);
+            color: var(--text-subtle);
+            transition: all var(--transition-fast);
+        }
+        
+        /* 标题样式 */
+        .page-header {
+            margin-bottom: var(--space-xl);
+            position: relative;
+            text-align: center;
+        }
+        
+        .timestamp {
+            position: absolute;
+            top: 0;
+            right: 0;
+            font-size: var(--text-xs);
+            color: var(--text-subtle);
+            font-weight: var(--font-weight-light);
+            letter-spacing: 0.05em;
+        }
+        
+        .project-tag {
+            font-size: var(--text-xs);
+            letter-spacing: 0.05em;
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xs);
+        }
+        
+        .site-title {
+            font-size: var(--text-xl);
+            font-weight: var(--font-weight-light);
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+            letter-spacing: -0.02em;
+        }
+        
+        .site-description {
+            font-size: var(--text-sm);
+            font-weight: var(--font-weight-light);
+            color: var(--text-secondary);
+            max-width: 36rem;
+            margin: 0 auto;
+            line-height: 1.8;
+        }
+        
+        /* 中央圆形元素 */
+        .central-element {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: var(--space-lg) auto var(--space-xxl);
+        }
+        
+        .circle-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            border-radius: var(--radius-full);
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            background: radial-gradient(circle, rgba(255,255,255,0.5) 0%, rgba(255,255,255,0.2) 100%);
+            border: 1px solid var(--surface-border);
+            overflow: hidden;
+        }
+        
+        .circle-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 6px;
+            height: 6px;
+            background-color: var(--text-primary);
+            border-radius: var(--radius-full);
+            opacity: 0.5;
+        }
+        
+        .circle-hand {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            height: 1px;
+            width: 40%;
+            background: linear-gradient(90deg, transparent, var(--text-primary));
+            transform-origin: left center;
+            animation: rotateHand 20s linear infinite;
+        }
+        
+        @keyframes rotateHand {
+            from { transform: translateY(-50%) rotate(0deg); }
+            to { transform: translateY(-50%) rotate(360deg); }
+        }
+        
+        .time-markers {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+        }
+        
+        .time-marker {
+            position: absolute;
+            width: 1px;
+            height: 4px;
+            background-color: var(--text-subtle);
+            opacity: 0.4;
+            transform-origin: center bottom;
+        }
+        
+        .time-label {
+            position: absolute;
+            font-size: var(--text-xs);
+            color: var(--text-subtle);
+            opacity: 0.7;
+            font-weight: var(--font-weight-light);
+        }
+        
+        /* 主要内容网格 */
+        .content-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: var(--space-md);
+            margin: var(--space-lg) 0;
+        }
+        
+        .card {
+            position: relative;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            box-shadow: var(--card-shadow);
+            overflow: hidden;
+            border: 1px solid var(--surface-border);
+            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        
+        .card:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.7);
+        }
+        
+        .card-accent {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 2px;
+            width: 40px;
+            border-radius: 2px;
+            opacity: 0.7;
+            transition: background var(--transition-medium);
+        }
+        
+        .accent-1 { background: linear-gradient(90deg, var(--accent-primary), transparent); }
+        .accent-2 { background: linear-gradient(90deg, var(--accent-secondary), transparent); }
+        .accent-3 { background: linear-gradient(90deg, var(--accent-tertiary), transparent); }
+        .accent-4 { background: linear-gradient(90deg, var(--accent-primary), var(--accent-secondary)); }
+        .accent-5 { background: linear-gradient(90deg, var(--accent-secondary), var(--accent-tertiary)); }
+        
+        .card-title {
+            margin-top: var(--space-xs);
+            font-size: var(--text-md);
+            font-weight: var(--font-weight-light);
+            color: var(--text-primary);
+            margin-bottom: var(--space-xs);
+            letter-spacing: -0.01em;
+        }
+        
+        .card-description {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-sm);
+            line-height: 1.7;
+        }
+        
+        .card-content {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: var(--radius-sm);
+            padding: var(--space-sm);
+        }
+        
+        .content-list {
+            list-style-type: none;
+        }
+        
+        .content-list li {
+            position: relative;
+            padding-left: var(--space-sm);
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-xxs);
+            line-height: 1.8;
+        }
+        
+        .content-list li::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0.7em;
+            width: 3px;
+            height: 1px;
+            background-color: var(--text-subtle);
+            opacity: 0.7;
+        }
+        
+        /* 部分标题 */
+        .section-title {
+            font-size: var(--text-md);
+            font-weight: var(--font-weight-light);
+            color: var(--text-primary);
+            margin: var(--space-xl) 0 var(--space-md);
+            position: relative;
+            letter-spacing: -0.01em;
+        }
+        
+        .section-title::after {
+            content: "";
+            position: absolute;
+            bottom: -8px;
+            left: 0;
+            width: 20px;
+            height: 1px;
+            background-color: var(--text-subtle);
+            opacity: 0.5;
+        }
+        
+        /* 组件卡片 */
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-md);
+            margin: var(--space-lg) 0;
+        }
+        
+        .component-card {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--surface-border);
+            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .component-card:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.7);
+        }
+        
+        .component-header {
+            padding: var(--space-md);
+            position: relative;
+        }
+        
+        .component-index {
+            position: absolute;
+            top: var(--space-sm);
+            right: var(--space-sm);
+            font-size: var(--text-xs);
+            color: var(--text-subtle);
+            font-weight: var(--font-weight-light);
+        }
+        
+        .component-title {
+            font-size: var(--text-md);
+            font-weight: var(--font-weight-light);
+            color: var(--text-primary);
+            margin-bottom: var(--space-xxs);
+            letter-spacing: -0.01em;
+        }
+        
+        .component-description {
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            line-height: 1.7;
+        }
+        
+        .component-body {
+            padding: var(--space-sm);
+            background: rgba(248, 248, 248, 0.3);
+            flex-grow: 1;
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--space-xs);
+            align-content: flex-start;
+        }
+        
+        .component-tag {
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.5);
+            padding: var(--space-xxs) var(--space-xs);
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--surface-border);
+            transition: all 0.3s ease;
+        }
+        
+        .component-tag:hover {
+            background: rgba(255, 255, 255, 0.8);
+            color: var(--text-primary);
+        }
+        
+        /* 路径导航 */
+        .path-guide {
+            margin-top: var(--space-xl);
+        }
+        
+        .path-intro {
+            text-align: center;
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-lg);
+            font-weight: var(--font-weight-light);
+        }
+        
+        .path-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-lg);
+            margin-top: var(--space-md);
+        }
+        
+        .path-card {
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            border: 1px solid var(--surface-border);
+            transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+        }
+        
+        .path-card:hover {
+            transform: translateY(-4px);
+            background: rgba(255, 255, 255, 0.7);
+        }
+        
+        .path-header {
+            padding: var(--space-sm) var(--space-md);
+            text-align: center;
+            border-bottom: 1px solid var(--surface-border);
+        }
+        
+        .path-title {
+            font-size: var(--text-md);
+            font-weight: var(--font-weight-light);
+            color: var(--text-primary);
+            letter-spacing: -0.01em;
+        }
+        
+        .path-steps {
+            padding: var(--space-md);
+        }
+        
+        .path-step {
+            display: flex;
+            margin-bottom: var(--space-md);
+            position: relative;
+        }
+        
+        .path-step:last-child {
+            margin-bottom: 0;
+        }
+        
+        .path-step::after {
+            content: "";
+            position: absolute;
+            top: 26px;
+            left: 12px;
+            width: 1px;
+            height: calc(100% + var(--space-md) - 26px);
+            background-color: var(--surface-border);
+            z-index: 0;
+        }
+        
+        .path-step:last-child::after {
+            display: none;
+        }
+        
+        .step-number {
+            width: 24px;
+            height: 24px;
+            border: 1px solid var(--surface-border);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.8);
+            margin-right: var(--space-sm);
+            position: relative;
+            z-index: 1;
+            flex-shrink: 0;
+        }
+        
+        .step-content {
+            padding-top: var(--space-xxs);
+        }
+        
+        .step-heading {
+            font-size: var(--text-sm);
+            font-weight: var(--font-weight-light);
+            color: var(--text-primary);
+            margin-bottom: var(--space-xxs);
+        }
+        
+        .step-description {
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        /* 甘特图时间线 */
+        .gantt-section {
+            margin-top: var(--space-xxl);
+            padding: var(--space-lg);
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--surface-border);
+        }
+        
+        .gantt-chart {
+            position: relative;
+            overflow-x: auto;
+            min-height: 600px;
+            padding: var(--space-md) 0;
+        }
+        
+        .gantt-header {
+            display: flex;
+            border-bottom: 1px solid var(--surface-border);
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 10;
+        }
+        
+        .gantt-months {
+            display: flex;
+            padding-left: 200px;
+        }
+        
+        .gantt-month {
+            width: 120px;
+            padding: var(--space-xs);
+            text-align: center;
+            font-size: var(--text-xs);
+            font-weight: var(--font-weight-medium);
+            color: var(--text-secondary);
+        }
+        
+        .gantt-body {
+            position: relative;
+        }
+        
+        .gantt-grid {
+            position: absolute;
+            top: 0;
+            left: 200px;
+            right: 0;
+            bottom: 0;
+            display: flex;
+            z-index: 1;
+        }
+        
+        .gantt-grid-column {
+            width: 120px;
+            border-right: 1px dashed var(--surface-border);
+            height: 100%;
+        }
+        
+        .gantt-section-row {
+            position: relative;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
+        }
+        
+        .gantt-section-name {
+            padding: var(--space-xs) var(--space-sm);
+            font-weight: var(--font-weight-medium);
+            color: var(--text-primary);
+            font-size: var(--text-sm);
+            width: 200px;
+            position: sticky;
+            left: 0;
+            background: rgba(255, 255, 255, 0.8);
+            z-index: 2;
+        }
+        
+        .gantt-tasks {
+            position: relative;
+        }
+        
+        .gantt-task-row {
+            position: relative;
+            height: 30px;
+            margin-bottom: var(--space-xxs);
+            display: flex;
+            align-items: center;
+        }
+        
+        .gantt-task-bar-container {
+            position: absolute;
+            left: 200px;
+            right: 0;
+            height: 100%;
+            z-index: 1;
+        }
+        
+        .gantt-task-bar {
+            position: absolute;
+            height: 20px;
+            border-radius: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0.85;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+        }
+        
+        .gantt-task-bar:hover {
+            opacity: 1;
+            height: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        .gantt-task-bar:active {
+            cursor: grabbing;
+        }
+        
+        .task-label {
+            color: white;
+            font-size: 0.7rem;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding: 0 8px;
+            user-select: none;
+            pointer-events: none;
+        }
+        
+        /* 工具链图表 */
+        .toolchain-section {
+            margin-top: var(--space-xxl);
+            padding: var(--space-lg);
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--surface-border);
+            text-align: center;
+        }
+        
+        .toolchain-diagram {
+            max-width: 800px;
+            margin: var(--space-lg) auto;
+            position: relative;
+        }
+        
+        .toolchain-node {
+            position: absolute;
+            padding: var(--space-xs) var(--space-sm);
+            background: white;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--surface-border);
+            font-size: var(--text-xs);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+        
+        .toolchain-node:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+        
+        .toolchain-arrow {
+            position: absolute;
+            height: 1px;
+            background: var(--text-subtle);
+            z-index: 0;
+        }
+        
+        .toolchain-arrow::after {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: -3px;
+            border-style: solid;
+            border-width: 3px 0 3px 6px;
+            border-color: transparent transparent transparent var(--text-subtle);
+        }
+        
+        .toolchain-label {
+            position: absolute;
+            font-size: var(--text-xs);
+            color: var(--text-subtle);
+            white-space: nowrap;
+        }
+        
+        /* Action Card系统 */
+        .action-card-section {
+            margin-top: var(--space-xxl);
+            padding: var(--space-lg);
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--surface-border);
+        }
+        
+        .action-card-container {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: var(--space-md);
+            margin: var(--space-lg) 0;
+        }
+        
+        .action-card {
+            width: 120px;
+            height: 180px;
+            border-radius: 8px;
+            padding: var(--space-sm);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .action-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.4), rgba(255, 255, 255, 0.1));
+            z-index: 1;
+        }
+        
+        .action-card-wood {
+            background: linear-gradient(to bottom, var(--wood-primary), var(--wood-secondary));
+        }
+        
+        .action-card-water {
+            background: linear-gradient(to bottom, var(--water-primary), var(--water-secondary));
+        }
+        
+        .action-card-metal {
+            background: linear-gradient(to bottom, var(--metal-primary), var(--metal-secondary));
+        }
+        
+        .action-card-fire {
+            background: linear-gradient(to bottom, var(--fire-primary), var(--fire-secondary));
+        }
+        
+        .action-card-earth {
+            background: linear-gradient(to bottom, var(--earth-primary), var(--earth-secondary));
+        }
+        
+        .action-card:hover {
+            transform: translateY(-10px) rotate(2deg);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+        }
+        
+        .action-card-icon {
+            width: 40px;
+            height: 40px;
+            margin-bottom: var(--space-sm);
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+        }
+        
+        .action-card-element {
+            font-size: var(--text-sm);
+            font-weight: var(--font-weight-medium);
+            color: white;
+            margin-bottom: var(--space-xxs);
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+            z-index: 2;
+        }
+        
+        .action-card-title {
+            font-size: var(--text-xs);
+            color: rgba(255, 255, 255, 0.9);
+            text-align: center;
+            z-index: 2;
+        }
+        
+        .action-card-states {
+            display: flex;
+            justify-content: space-around;
+            margin-top: var(--space-lg);
+            flex-wrap: wrap;
+        }
+        
+        .action-card-state {
+            padding: var(--space-xs);
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: var(--radius-sm);
+            margin: var(--space-xs);
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+        }
+        
+        /* 工作计划时间线 */
+        .timeline-section {
+            margin-top: var(--space-xxl);
+            padding: var(--space-lg);
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--surface-border);
+        }
+        
+        .timeline-intro {
+            text-align: center;
+            max-width: 600px;
+            margin: 0 auto var(--space-lg);
+        }
+        
+        .timeline-container {
+            position: relative;
+            padding: var(--space-md) 0;
+        }
+        
+        .timeline-line {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 1px;
+            height: 100%;
+            background-color: var(--surface-border);
+            transform: translateX(-50%);
+        }
+        
+        .timeline-quarter {
+            position: relative;
+            margin-bottom: var(--space-xl);
+        }
+        
+        .quarter-label {
+            position: relative;
+            width: 80px;
+            height: 30px;
+            background: var(--accent-primary);
+            border-radius: var(--radius-full);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: var(--text-xs);
+            font-weight: var(--font-weight-medium);
+            color: white;
+            margin: 0 auto var(--space-md);
+            z-index: 1;
+        }
+        
+        .quarter-items {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--space-lg) var(--space-xl);
+            position: relative;
+        }
+        
+        .timeline-item {
+            position: relative;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: var(--radius-md);
+            padding: var(--space-md);
+            box-shadow: var(--card-shadow);
+            border: 1px solid var(--surface-border);
+            transition: all 0.3s ease;
+        }
+        
+        .timeline-item:hover {
+            transform: translateY(-3px);
+            background: rgba(255, 255, 255, 0.8);
+        }
+        
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            top: 20px;
+            width: 20px;
+            height: 1px;
+            background-color: var(--surface-border);
+        }
+        
+        .timeline-item:nth-child(odd)::after {
+            right: -20px;
+        }
+        
+        .timeline-item:nth-child(even)::after {
+            left: -20px;
+        }
+        
+        .timeline-dot {
+            position: absolute;
+            top: 20px;
+            width: 10px;
+            height: 10px;
+            background-color: var(--accent-primary);
+            border-radius: var(--radius-full);
+            border: 2px solid white;
+        }
+        
+        .timeline-item:nth-child(odd) .timeline-dot {
+            right: -25px;
+        }
+        
+        .timeline-item:nth-child(even) .timeline-dot {
+            left: -25px;
+        }
+        
+        .timeline-date {
+            font-size: var(--text-xs);
+            color: var(--text-subtle);
+            margin-bottom: var(--space-xxs);
+        }
+        
+        .timeline-title {
+            font-size: var(--text-sm);
+            font-weight: var(--font-weight-light);
+            color: var(--text-primary);
+            margin-bottom: var(--space-xxs);
+        }
+        
+        .timeline-description {
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: var(--space-xs);
+        }
+        
+        .timeline-deliverables {
+            font-size: var(--text-xs);
+            font-style: italic;
+            color: var(--text-subtle);
+        }
+        
+        /* 优先级指示器 */
+        .priority-indicator {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: var(--radius-full);
+            font-size: var(--text-xs);
+            margin-left: var(--space-xs);
+            vertical-align: middle;
+        }
+        
+        .priority-high {
+            background-color: rgba(224, 121, 102, 0.2);
+            color: var(--color-fire);
+        }
+        
+        .priority-medium {
+            background-color: rgba(224, 192, 151, 0.2);
+            color: var(--color-metal);
+        }
+        
+        .priority-low {
+            background-color: rgba(123, 169, 141, 0.2);
+            color: var(--color-wood);
+        }
+        
+        /* 系统图 */
+        .system-diagram {
+            max-width: 900px;
+            margin: var(--space-xl) auto;
+            padding: var(--space-lg);
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--surface-border);
+            text-align: center;
+        }
+        
+        .diagram-title {
+            margin-bottom: var(--space-md);
+            font-weight: var(--font-weight-light);
+        }
+        
+        .diagram-description {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            margin-bottom: var(--space-lg);
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .diagram-image {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            margin: 0 auto;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.3);
+            padding: var(--space-md);
+        }
+        
+        .diagram-legend {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: var(--space-sm);
+            margin-top: var(--space-md);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: var(--text-xs);
+            color: var(--text-secondary);
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+            margin-right: var(--space-xxs);
+        }
+        
+        .color-metal { background-color: var(--color-metal); }
+        .color-wood { background-color: var(--color-wood); }
+        .color-water { background-color: var(--color-water); }
+        .color-fire { background-color: var(--color-fire); }
+        .color-earth { background-color: var(--color-earth); }
+        
+        /* MIT申请部分 */
+        .application-section {
+            margin-top: var(--space-xxl);
+            padding: var(--space-xl);
+            background: var(--card-bg);
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid var(--surface-border);
+        }
+        
+        .application-header {
+            text-align: center;
+            margin-bottom: var(--space-lg);
+            position: relative;
+        }
+        
+        .application-title {
+            font-size: var(--text-lg);
+            font-weight: var(--font-weight-light);
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+        }
+        
+        .application-subtitle {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .application-accent {
+            width: 40px;
+            height: 3px;
+            background: var(--color-fire);
+            margin: var(--space-md) auto;
+            border-radius: 1.5px;
+        }
+        
+        .application-columns {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: var(--space-lg);
+            margin-top: var(--space-xl);
+        }
+        
+        .application-column {
+            padding: var(--space-md);
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--surface-border);
+        }
+        
+        .column-title {
+            font-size: var(--text-md);
+            font-weight: var(--font-weight-light);
+            color: var(--text-primary);
+            margin-bottom: var(--space-sm);
+            position: relative;
+            padding-left: var(--space-sm);
+        }
+        
+        .column-title::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 3px;
+            height: 16px;
+            background: var(--color-fire);
+            border-radius: 1.5px;
+        }
+        
+        .column-content {
+            font-size: var(--text-sm);
+            color: var(--text-secondary);
+            line-height: 1.8;
+        }
+        
+        .column-content p {
+            margin-bottom: var(--space-sm);
+        }
+        
+        .column-content p:last-child {
+            margin-bottom: 0;
+        }
+        
+        .quote {
+            font-style: italic;
+            position: relative;
+            padding: var(--space-md);
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: var(--radius-md);
+            margin: var(--space-md) 0;
+        }
+        
+        .quote::before {
+            content: '"';
+            position: absolute;
+            top: 0;
+            left: 10px;
+            font-size: 40px;
+            color: var(--accent-primary);
+            opacity: 0.4;
+            line-height: 1;
+        }
+        
+        /* 优雅的淡入动画 */
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .animate-fade-up {
+            opacity: 0;
+            animation: fadeUp 0.6s cubic-bezier(0.19, 1, 0.22, 1) forwards;
+        }
+        
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+        .delay-5 { animation-delay: 0.5s; }
+        
+        /* 响应式调整 */
+        @media (max-width: 768px) {
+            :root {
+                --text-xl: 1.75rem;
+                --text-lg: 1.25rem;
+                --text-md: 1rem;
+                --space-xl: 3rem;
+                --space-lg: 2rem;
+            }
+            
+            .content-grid,
+            .component-grid,
+            .path-grid,
+            .application-columns {
+                grid-template-columns: 1fr;
+            }
+            
+            .central-element {
+                width: 220px;
+                height: 220px;
+            }
+            
+            .theme-selector {
+                top: 10px;
+                right: 10px;
+                padding: 3px 8px;
+            }
+            
+            .theme-slider-container {
+                width: 80px;
+            }
+            
+            .theme-label {
+                font-size: 0.7rem;
+            }
+            
+            .quarter-items {
+                grid-template-columns: 1fr;
+            }
+            
+            .timeline-item:nth-child(even),
+            .timeline-item:nth-child(odd) {
+                margin-left: 30px;
+            }
+            
+            .timeline-item:nth-child(even)::after,
+            .timeline-item:nth-child(odd)::after {
+                left: -20px;
+                right: auto;
+            }
+            
+            .timeline-item:nth-child(even) .timeline-dot,
+            .timeline-item:nth-child(odd) .timeline-dot {
+                left: -25px;
+                right: auto;
+            }
+            
+            .timeline-line {
+                left: 15px;
+            }
+            
+            .action-card-container {
+                justify-content: flex-start;
+                overflow-x: auto;
+                padding-bottom: var(--space-sm);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 微妙的纸张纹理 -->
+    <div class="paper-texture"></div>
+
+    <!-- 主题选择器 -->
+    <div class="theme-selector">
+        <span class="theme-label">时光</span>
+        <div class="theme-slider-container">
+            <input type="range" min="0" max="3" value="2" class="theme-slider" id="themeSlider">
+            <div class="theme-name" id="themeName">黄昏</div>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- 页面头部 -->
+        <header class="page-header animate-fade-up">
+            <div class="timestamp">2025.03.01</div>
+            <div class="project-tag">多层次数字建筑状态机</div>
+            <h1 class="site-title">野山道场</h1>
+            <p class="site-description">一个通过五行景观映射用户行动模式、促进自我探索的交互式生态系统。在修行与数字化的交叉点上，探索人与环境的共生关系。</p>
+        </header>
+
+        <!-- 中央圆形元素 -->
+        <div class="central-element animate-fade-up delay-1">
+            <div class="circle-container">
+                <div class="circle-center"></div>
+                <div class="circle-hand"></div>
+                <div class="time-markers" id="time-markers"></div>
+            </div>
+        </div>
+
+        <!-- 主要导航卡片 -->
+        <div class="content-grid">
+            <!-- 系统全景 -->
+            <div class="card animate-fade-up delay-1">
+                <div class="card-accent accent-1"></div>
+                <h2 class="card-title">系统全景</h2>
+                <p class="card-description">探索野山道场的整体概念与设计哲学，理解五行元素如何构建数字化修行空间。</p>
+                <div class="card-content">
+                    <ul class="content-list">
+                        <li>概念地图与系统视觉化</li>
+                        <li>五行哲学基础</li>
+                        <li>系统架构与组件关系</li>
+                        <li>设计原则与理念阐述</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 核心组件 -->
+            <div class="card animate-fade-up delay-2">
+                <div class="card-accent accent-2"></div>
+                <h2 class="card-title">核心组件</h2>
+                <p class="card-description">深入探索系统四大模块的设计与功能，了解它们如何协同工作构建完整体验。</p>
+                <div class="card-content">
+                    <ul class="content-list">
+                        <li>行动卡牌系统</li>
+                        <li>五行景观引擎</li>
+                        <li>神明对话框架</li>
+                        <li>时间生态系统</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 研究实验室 -->
+            <div class="card animate-fade-up delay-3">
+                <div class="card-accent accent-3"></div>
+                <h2 class="card-title">研究实验室</h2>
+                <p class="card-description">记录项目发展过程中的技术探索与设计思考，展示从概念到实现的演变历程。</p>
+                <div class="card-content">
+                    <ul class="content-list">
+                        <li>水墨渲染技术探索</li>
+                        <li>参数化设计实验</li>
+                        <li>用户测试反馈记录</li>
+                        <li>设计思考与迭代日志</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 元叙事剧场 -->
+            <div class="card animate-fade-up delay-4">
+                <div class="card-accent accent-4"></div>
+                <h2 class="card-title">元叙事剧场</h2>
+                <p class="card-description">探索创作者的个人旅程与项目理念的关联，了解跨文化经历如何塑造设计思维。</p>
+                <div class="card-content">
+                    <ul class="content-list">
+                        <li>个人背景与艺术旅程</li>
+                        <li>"未来的我"概念影片</li>
+                        <li>跨文化经历与艺术探索</li>
+                        <li>设计理念的个人起源</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- 资源与连接 -->
+            <div class="card animate-fade-up delay-5">
+                <div class="card-accent accent-5"></div>
+                <h2 class="card-title">资源与连接</h2>
+                <p class="card-description">发现项目的理论基础与延伸资源，了解未来发展方向与合作机会。</p>
+                <div class="card-content">
+                    <ul class="content-list">
+                        <li>理论基础文献</li>
+                        <li>相关项目与研究</li>
+                        <li>合作伙伴与致谢</li>
+                        <li>未来发展路径</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- 甘特图时间线 -->
+        <div class="gantt-section animate-fade-up">
+            <h2 class="section-title">组件开发时间线</h2>
+            <p class="diagram-description">野山道场项目四个季度的详细开发计划与任务依赖关系</p>
+            
+            <div class="gantt-chart">
+                <div class="gantt-header">
+                    <div class="gantt-months">
+                        <div class="gantt-month">1月</div>
+                        <div class="gantt-month">2月</div>
+                        <div class="gantt-month">3月</div>
+                        <div class="gantt-month">4月</div>
+                        <div class="gantt-month">5月</div>
+                        <div class="gantt-month">6月</div>
+                        <div class="gantt-month">7月</div>
+                        <div class="gantt-month">8月</div>
+                        <div class="gantt-month">9月</div>
+                        <div class="gantt-month">10月</div>
+                        <div class="gantt-month">11月</div>
+                        <div class="gantt-month">12月</div>
+                    </div>
+                </div>
+                
+                <div class="gantt-body">
+                    <!-- 背景网格 -->
+                    <div class="gantt-grid">
+                        <div class="gantt-grid-column"></div>
+                        <div class="gantt-grid-column"></div>
+                        <div class="gantt-grid-column"></div>
+                        <div class="gantt-grid-column"></div>
+                        <div class="gantt-grid-column"></div>
+                        <div class="gantt-grid-column"></div>
+                        <div class="gantt-grid-column"></div>
+                        <div class="gantt-grid-column"></div>
+                        <div class="gantt-grid-column"></div>
+                        <div class="gantt-grid-column"></div>
+                        <div class="gantt-grid-column"></div>
+                        <div class="gantt-grid-column"></div>
+                    </div>
+                    
+                    <!-- 系统架构 -->
+                    <div class="gantt-section-row">
+                        <div class="gantt-section-name">系统架构</div>
+                        <div class="gantt-tasks">
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 0; width: 133px; background: var(--color-metal);" draggable="true">
+                                        <span class="task-label">概念地图设计</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 50px; width: 133px; background: var(--color-metal);" draggable="true">
+                                        <span class="task-label">组件关系定义</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 100px; width: 133px; background: var(--color-metal);" draggable="true">
+                                        <span class="task-label">网站框架搭建</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 五行景观引擎 -->
+                    <div class="gantt-section-row">
+                        <div class="gantt-section-name">五行景观引擎</div>
+                        <div class="gantt-tasks">
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 150px; width: 150px; background: var(--color-wood);" draggable="true">
+                                        <span class="task-label">水墨着色器开发</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 200px; width: 150px; background: var(--color-wood);" draggable="true">
+                                        <span class="task-label">参数化系统设计</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 250px; width: 167px; background: var(--color-wood);" draggable="true">
+                                        <span class="task-label">2.5D渲染系统</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 行动卡牌系统 -->
+                    <div class="gantt-section-row">
+                        <div class="gantt-section-name">行动卡牌系统</div>
+                        <div class="gantt-tasks">
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 250px; width: 133px; background: var(--color-water);" draggable="true">
+                                        <span class="task-label">卡片分类系统</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 300px; width: 150px; background: var(--color-water);" draggable="true">
+                                        <span class="task-label">卡片交互原型</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 350px; width: 150px; background: var(--color-water);" draggable="true">
+                                        <span class="task-label">数据持久化系统</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 神明对话框架 -->
+                    <div class="gantt-section-row">
+                        <div class="gantt-section-name">神明对话框架</div>
+                        <div class="gantt-tasks">
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 350px; width: 150px; background: var(--color-fire);" draggable="true">
+                                        <span class="task-label">FAAA模型实现</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 400px; width: 150px; background: var(--color-fire);" draggable="true">
+                                        <span class="task-label">对话树设计</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 450px; width: 167px; background: var(--color-fire);" draggable="true">
+                                        <span class="task-label">对话体验原型</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 时间生态系统 -->
+                    <div class="gantt-section-row">
+                        <div class="gantt-section-name">时间生态系统</div>
+                        <div class="gantt-tasks">
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 450px; width: 150px; background: var(--color-earth);" draggable="true">
+                                        <span class="task-label">多层次时间设计</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 500px; width: 167px; background: var(--color-earth);" draggable="true">
+                                        <span class="task-label">演化算法开发</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 550px; width: 150px; background: var(--color-earth);" draggable="true">
+                                        <span class="task-label">历史记忆机制</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 元叙事短片 -->
+                    <div class="gantt-section-row">
+                        <div class="gantt-section-name">元叙事短片</div>
+                        <div class="gantt-tasks">
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 550px; width: 167px; background: var(--accent-primary);" draggable="true">
+                                        <span class="task-label">悬崖片段制作</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 600px; width: 167px; background: var(--accent-primary);" draggable="true">
+                                        <span class="task-label">景观交互片段</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 650px; width: 150px; background: var(--accent-primary);" draggable="true">
+                                        <span class="task-label">整合与后期</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- MIT申请准备 -->
+                    <div class="gantt-section-row">
+                        <div class="gantt-section-name">MIT申请准备</div>
+                        <div class="gantt-tasks">
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 270px; width: 150px; background: var(--accent-secondary);" draggable="true">
+                                        <span class="task-label">作品集整合</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 320px; width: 133px; background: var(--accent-secondary);" draggable="true">
+                                        <span class="task-label">申请文书编写</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="gantt-task-row">
+                                <div class="gantt-task-bar-container">
+                                    <div class="gantt-task-bar" style="left: 353px; width: 150px; background: var(--accent-secondary);" draggable="true">
+                                        <span class="task-label">最终提交准备</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 工具链整合图表 -->
+        <div class="toolchain-section animate-fade-up">
+            <h2 class="section-title">工具链整合与生产流程</h2>
+            <p class="diagram-description">从概念设计到最终成品的技术工具链和数据流</p>
+            
+            <div class="toolchain-diagram">
+                <svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 背景 -->
+                    <rect x="0" y="0" width="800" height="500" fill="rgba(255,255,255,0.2)" rx="8" />
+                    
+                    <!-- 概念设计节点 -->
+                    <rect x="80" y="100" width="120" height="40" rx="8" fill="white" stroke="#E0C097" stroke-width="2" />
+                    <text x="140" y="125" font-size="14" text-anchor="middle" fill="#444342">概念设计</text>
+                    
+                    <!-- 主要工具节点 -->
+                    <rect x="50" y="200" width="100" height="40" rx="8" fill="white" stroke="#7BA98D" stroke-width="2" />
+                    <text x="100" y="225" font-size="14" text-anchor="middle" fill="#444342">Blender</text>
+                    
+                    <rect x="180" y="200" width="100" height="40" rx="8" fill="white" stroke="#E07966" stroke-width="2" />
+                    <text x="230" y="225" font-size="14" text-anchor="middle" fill="#444342">Rive</text>
+                    
+                    <rect x="310" y="200" width="140" height="40" rx="8" fill="white" stroke="#6A8CAF" stroke-width="2" />
+                    <text x="380" y="225" font-size="14" text-anchor="middle" fill="#444342">TouchDesigner</text>
+                    
+                    <!-- 连接线 -->
+                    <line x1="110" y1="140" x2="90" y2="200" stroke="#444342" stroke-width="1" stroke-dasharray="4,2" />
+                    <line x1="140" y1="140" x2="220" y2="200" stroke="#444342" stroke-width="1" stroke-dasharray="4,2" />
+                    <line x1="170" y1="140" x2="350" y2="200" stroke="#444342" stroke-width="1" stroke-dasharray="4,2" />
+                    
+                    <!-- 系统组件节点 -->
+                    <rect x="50" y="300" width="120" height="40" rx="8" fill="white" stroke="#7BA98D" stroke-width="2" />
+                    <text x="110" y="325" font-size="14" text-anchor="middle" fill="#444342">景观引擎</text>
+                    
+                    <rect x="200" y="300" width="120" height="40" rx="8" fill="white" stroke="#E07966" stroke-width="2" />
+                    <text x="260" y="325" font-size="14" text-anchor="middle" fill="#444342">交互系统</text>
+                    
+                    <rect x="350" y="300" width="120" height="40" rx="8" fill="white" stroke="#6A8CAF" stroke-width="2" />
+                    <text x="410" y="325" font-size="14" text-anchor="middle" fill="#444342">视觉反馈</text>
+                    
+                    <!-- 工具到组件连接线 -->
+                    <line x1="100" y1="240" x2="100" y2="300" stroke="#7BA98D" stroke-width="2" />
+                    <text x="140" y="270" font-size="12" fill="#7BA98D">景观模型/材质</text>
+                    
+                    <line x1="230" y1="240" x2="250" y2="300" stroke="#E07966" stroke-width="2" />
+                    <text x="270" y="270" font-size="12" fill="#E07966">UI元素/角色动画</text>
+                    
+                    <line x1="380" y1="240" x2="400" y2="300" stroke="#6A8CAF" stroke-width="2" />
+                    <text x="440" y="270" font-size="12" fill="#6A8CAF">特效系统</text>
+                    
+                    <!-- 系统整合节点 -->
+                    <rect x="200" y="380" width="120" height="40" rx="8" fill="white" stroke="#BF9762" stroke-width="2" />
+                    <text x="260" y="405" font-size="14" text-anchor="middle" fill="#444342">系统整合</text>
+                    
+                    <!-- 组件到整合连接线 -->
+                    <line x1="110" y1="340" x2="220" y2="380" stroke="#444342" stroke-width="1" />
+                    <line x1="260" y1="340" x2="260" y2="380" stroke="#444342" stroke-width="1" />
+                    <line x1="410" y1="340" x2="300" y2="380" stroke="#444342" stroke-width="1" />
+                    
+                    <!-- 最终输出节点 -->
+                    <rect x="100" y="450" width="120" height="40" rx="8" fill="white" stroke="#E07966" stroke-width="2" />
+                    <text x="160" y="475" font-size="14" text-anchor="middle" fill="#444342">Pilot Film</text>
+                    
+                    <rect x="300" y="450" width="120" height="40" rx="8" fill="white" stroke="#7BA98D" stroke-width="2" />
+                    <text x="360" y="475" font-size="14" text-anchor="middle" fill="#444342">交互原型</text>
+                    
+                    <!-- 整合到输出连接线 -->
+                    <line x1="230" y1="420" x2="170" y2="450" stroke="#E07966" stroke-width="2" />
+                    <line x1="290" y1="420" x2="350" y2="450" stroke="#7BA98D" stroke-width="2" />
+                    
+                    <!-- Framer网站节点 -->
+                    <rect x="550" y="380" width="150" height="40" rx="8" fill="white" stroke="#E0C097" stroke-width="2" />
+                    <text x="625" y="405" font-size="14" text-anchor="middle" fill="#444342">Framer网站</text>
+                    
+                    <!-- 最终输出到网站连接线 -->
+                    <line x1="220" y1="460" x2="550" y2="400" stroke="#444342" stroke-width="1" stroke-dasharray="4,2" />
+                    <line x1="420" y1="460" x2="550" y2="400" stroke="#444342" stroke-width="1" stroke-dasharray="4,2" />
+                    
+                    <!-- 工作流方向箭头 -->
+                    <path d="M 110 160 L 110 180 L 115 175 L 110 180 L 105 175" fill="none" stroke="#444342" stroke-width="1" />
+                    <path d="M 100 260 L 100 280 L 105 275 L 100 280 L 95 275" fill="none" stroke="#444342" stroke-width="1" />
+                    <path d="M 230 260 L 250 280 L 255 275 L 250 280 L 245 275" fill="none" stroke="#444342" stroke-width="1" />
+                    <path d="M 380 260 L 400 280 L 405 275 L 400 280 L 395 275" fill="none" stroke="#444342" stroke-width="1" />
+                    <path d="M 200 400 L 180 430 L 185 425 L 180 430 L 175 425" fill="none" stroke="#444342" stroke-width="1" />
+                    <path d="M 320 400 L 340 430 L 345 425 L 340 430 L 335 425" fill="none" stroke="#444342" stroke-width="1" />
+                </svg>
+            </div>
+        </div>
+        
+        <!-- Action Card系统 -->
+        <div class="action-card-section animate-fade-up">
+            <h2 class="section-title">行动卡牌系统</h2>
+            <p class="diagram-description">五行属性映射的微行动卡牌，用户可创建、分享和执行的行动收集系统</p>
+            
+            <div class="action-card-container">
+                <!-- 木行动卡 -->
+                <div class="action-card action-card-wood">
+                    <div class="action-card-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                            <path d="M18 20V10M12 20V4M6 20v-6"></path>
+                        </svg>
+                    </div>
+                    <div class="action-card-element">木</div>
+                    <div class="action-card-title">晨间伸展</div>
+                </div>
+                
+                <!-- 水行动卡 -->
+                <div class="action-card action-card-water">
+                    <div class="action-card-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                            <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"></path>
+                            <path d="M12 6v6l4 2"></path>
+                        </svg>
+                    </div>
+                    <div class="action-card-element">水</div>
+                    <div class="action-card-title">冥想十分钟</div>
+                </div>
+                
+                <!-- 金行动卡 -->
+                <div class="action-card action-card-metal">
+                    <div class="action-card-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                    </div>
+                    <div class="action-card-element">金</div>
+                    <div class="action-card-title">专注工作</div>
+                </div>
+                
+                <!-- 火行动卡 -->
+                <div class="action-card action-card-fire">
+                    <div class="action-card-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                        </svg>
+                    </div>
+                    <div class="action-card-element">火</div>
+                    <div class="action-card-title">表达感谢</div>
+                </div>
+                
+                <!-- 土行动卡 -->
+                <div class="action-card action-card-earth">
+                    <div class="action-card-icon">
+                        <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                        </svg>
+                    </div>
+                    <div class="action-card-element">土</div>
+                    <div class="action-card-title">整理空间</div>
+                </div>
+            </div>
+            
+            <!-- 卡片状态 -->
+            <div class="action-card-states">
+                <div class="action-card-state">闲置(Idle)</div>
+                <div class="action-card-state">悬停(Hover)</div>
+                <div class="action-card-state">选中(Selected)</div>
+                <div class="action-card-state">激活(Active)</div>
+                <div class="action-card-state">完成(Complete)</div>
+            </div>
+        </div>
+
+        <!-- 系统架构图 -->
+        <div class="system-diagram animate-fade-up">
+            <h2 class="diagram-title">系统架构与组件关系图</h2>
+            <p class="diagram-description">野山道场系统的核心模块及其相互关系，展示数据流与功能依赖。</p>
+            
+            <div class="diagram-image">
+                <svg width="800" height="500" viewBox="0 0 800 500" xmlns="http://www.w3.org/2000/svg">
+                    <!-- 背景 -->
+                    <rect x="0" y="0" width="800" height="500" fill="rgba(255,255,255,0.2)" rx="8" />
+                    
+                    <!-- 中央节点 -->
+                    <circle cx="400" cy="250" r="60" fill="rgba(255,255,255,0.8)" stroke="#E07966" stroke-width="2" />
+                    <text x="400" y="255" font-size="14" text-anchor="middle" fill="#444342">野山道场</text>
+                    
+                    <!-- 核心组件节点 -->
+                    <circle cx="250" cy="150" r="50" fill="rgba(255,255,255,0.8)" stroke="#E0C097" stroke-width="2" />
+                    <text x="250" y="155" font-size="12" text-anchor="middle" fill="#444342">行动卡牌系统</text>
+                    
+                    <circle cx="550" cy="150" r="50" fill="rgba(255,255,255,0.8)" stroke="#7BA98D" stroke-width="2" />
+                    <text x="550" y="155" font-size="12" text-anchor="middle" fill="#444342">五行景观引擎</text>
+                    
+                    <circle cx="250" cy="350" r="50" fill="rgba(255,255,255,0.8)" stroke="#6A8CAF" stroke-width="2" />
+                    <text x="250" y="355" font-size="12" text-anchor="middle" fill="#444342">神明对话框架</text>
+                    
+                    <circle cx="550" cy="350" r="50" fill="rgba(255,255,255,0.8)" stroke="#BF9762" stroke-width="2" />
+                    <text x="550" y="355" font-size="12" text-anchor="middle" fill="#444342">时间生态系统</text>
+                    
+                    <!-- 连接线 -->
+                    <line x1="292" y1="175" x2="358" y2="215" stroke="#E0C097" stroke-width="2" stroke-dasharray="5,3" />
+                    <line x1="508" y1="175" x2="442" y2="215" stroke="#7BA98D" stroke-width="2" stroke-dasharray="5,3" />
+                    <line x1="292" y1="325" x2="358" y2="285" stroke="#6A8CAF" stroke-width="2" stroke-dasharray="5,3" />
+                    <line x1="508" y1="325" x2="442" y2="285" stroke="#BF9762" stroke-width="2" stroke-dasharray="5,3" />
+                    
+                    <line x1="250" y1="200" x2="250" y2="300" stroke="#E07966" stroke-width="2" opacity="0.6" />
+                    <line x1="300" y1="150" x2="500" y2="150" stroke="#E07966" stroke-width="2" opacity="0.6" />
+                    <line x1="550" y1="200" x2="550" y2="300" stroke="#E07966" stroke-width="2" opacity="0.6" />
+                    <line x1="300" y1="350" x2="500" y2="350" stroke="#E07966" stroke-width="2" opacity="0.6" />
+                    
+                    <!-- 数据流箭头 -->
+                    <path d="M290 160 L320 160 L315 155 M320 160 L315 165" fill="none" stroke="#444342" stroke-width="1" />
+                    <path d="M510 160 L480 160 L485 155 M480 160 L485 165" fill="none" stroke="#444342" stroke-width="1" />
+                    <path d="M260 200 L260 230 L255 225 M260 230 L265 225" fill="none" stroke="#444342" stroke-width="1" />
+                    <path d="M260 300 L260 270 L255 275 M260 270 L265 275" fill="none" stroke="#444342" stroke-width="1" />
+                    
+                    <!-- 功能描述 -->
+                    <rect x="120" y="100" width="90" height="20" rx="10" fill="rgba(224,192,151,0.2)" />
+                    <text x="165" y="114" font-size="10" text-anchor="middle" fill="#444342">用户行动输入</text>
+                    
+                    <rect x="590" y="100" width="90" height="20" rx="10" fill="rgba(123,169,141,0.2)" />
+                    <text x="635" y="114" font-size="10" text-anchor="middle" fill="#444342">视觉景观生成</text>
+                    
+                    <rect x="120" y="380" width="90" height="20" rx="10" fill="rgba(106,140,175,0.2)" />
+                    <text x="165" y="394" font-size="10" text-anchor="middle" fill="#444342">引导式对话</text>
+                    
+                    <rect x="590" y="380" width="90" height="20" rx="10" fill="rgba(191,151,98,0.2)" />
+                    <text x="635" y="394" font-size="10" text-anchor="middle" fill="#444342">历史与演化</text>
+                </svg>
+            </div>
+            
+            <div class="diagram-legend">
+                <div class="legend-item">
+                    <div class="legend-color color-metal"></div>
+                    <span>行动卡牌</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color color-wood"></div>
+                    <span>景观引擎</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color color-water"></div>
+                    <span>对话框架</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color color-earth"></div>
+                    <span>时间系统</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color color-fire"></div>
+                    <span>数据流动</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 核心组件详情 -->
+        <h2 class="section-title animate-fade-up">核心组件详情</h2>
+        <div class="component-grid">
+            <!-- 行动卡牌系统 -->
+            <div class="component-card animate-fade-up delay-1">
+                <div class="component-header">
+                    <div class="component-index">01</div>
+                    <h3 class="component-title">行动卡牌系统</h3>
+                    <p class="component-description">用户创建、分享和执行的微行动收集系统，将日常行为映射到五行属性，构建个人修行路径。</p>
+                </div>
+                <div class="component-body">
+                    <span class="component-tag">概念与视觉设计</span>
+                    <span class="component-tag">交互原型演示</span>
+                    <span class="component-tag">技术实现文档</span>
+                </div>
+            </div>
+
+            <!-- 五行景观引擎 -->
+            <div class="component-card animate-fade-up delay-2">
+                <div class="component-header">
+                    <div class="component-index">02</div>
+                    <h3 class="component-title">五行景观引擎</h3>
+                    <p class="component-description">将用户行动数据转化为动态山水景观的参数化系统，通过视觉化呈现内在状态。</p>
+                </div>
+                <div class="component-body">
+                    <span class="component-tag">水墨渲染技术</span>
+                    <span class="component-tag">参数化映射系统</span>
+                    <span class="component-tag">景观生成演示</span>
+                </div>
+            </div>
+
+            <!-- 神明对话框架 -->
+            <div class="component-card animate-fade-up delay-3">
+                <div class="component-header">
+                    <div class="component-index">03</div>
+                    <h3 class="component-title">神明对话框架</h3>
+                    <p class="component-description">基于FAAA模型的引导式对话系统，通过敬畏情感促进心理转化和自我认知升级。</p>
+                </div>
+                <div class="component-body">
+                    <span class="component-tag">FAAA模型应用</span>
+                    <span class="component-tag">对话树架构</span>
+                    <span class="component-tag">原型体验</span>
+                </div>
+            </div>
+
+            <!-- 时间生态系统 -->
+            <div class="component-card animate-fade-up delay-4">
+                <div class="component-header">
+                    <div class="component-index">04</div>
+                    <h3 class="component-title">时间生态系统</h3>
+                    <p class="component-description">具有多层次时间性的数据持久化与演化系统，记录历史轨迹并参与构建未来可能性。</p>
+                </div>
+                <div class="component-body">
+                    <span class="component-tag">多层次时间设计</span>
+                    <span class="component-tag">演化算法</span>
+                    <span class="component-tag">历史记忆机制</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 工作计划时间线 -->
+        <div class="timeline-section animate-fade-up">
+            <div class="timeline-intro">
+                <h2 class="section-title">年度开发计划</h2>
+                <p>野山道场分四个季度开发，每个阶段有明确的目标与交付物，确保系统组件的有序构建与整合。</p>
+            </div>
+            
+            <div class="timeline-container">
+                <div class="timeline-line"></div>
+                
+                <!-- 第一季度 -->
+                <div class="timeline-quarter">
+                    <div class="quarter-label">第一季度</div>
+                    <div class="quarter-items">
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">1-2周</div>
+                            <div class="timeline-title">系统架构设计<span class="priority-indicator priority-high">优先</span></div>
+                            <div class="timeline-description">创建完整系统地图，明确各组件关系与交互逻辑</div>
+                            <div class="timeline-deliverables">交付: 系统地图 + 组件关系图</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">3-4周</div>
+                            <div class="timeline-title">网站框架搭建</div>
+                            <div class="timeline-description">构建项目网站基础框架，设计内容管理系统</div>
+                            <div class="timeline-deliverables">交付: 基础网站结构 + CMS</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">5-8周</div>
+                            <div class="timeline-title">五行视觉语言设计<span class="priority-indicator priority-medium">中等</span></div>
+                            <div class="timeline-description">开发五行元素的视觉表达方式，建立设计系统</div>
+                            <div class="timeline-deliverables">交付: 视觉风格指南 + 参考库</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">9-12周</div>
+                            <div class="timeline-title">行动卡牌系统概念化</div>
+                            <div class="timeline-description">设计卡牌分类与交互机制，建立与五行的映射关系</div>
+                            <div class="timeline-deliverables">交付: 卡牌分类系统 + 初步原型</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第二季度 -->
+                <div class="timeline-quarter">
+                    <div class="quarter-label">第二季度</div>
+                    <div class="quarter-items">
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">13-16周</div>
+                            <div class="timeline-title">水墨渲染引擎实验<span class="priority-indicator priority-high">优先</span></div>
+                            <div class="timeline-description">开发水墨风格的渲染技术，实现景观基础视觉效果</div>
+                            <div class="timeline-deliverables">交付: Blender着色器原型 + 演示</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">17-20周</div>
+                            <div class="timeline-title">行动卡牌交互设计</div>
+                            <div class="timeline-description">实现卡牌的创建、编辑和组合功能，设计用户界面</div>
+                            <div class="timeline-deliverables">交付: Rive交互原型 + 用户测试</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">21-22周</div>
+                            <div class="timeline-title">神明对话系统框架</div>
+                            <div class="timeline-description">开发对话树结构，实现FAAA模型的情感转化机制</div>
+                            <div class="timeline-deliverables">交付: 对话树结构 + 情感转化模型</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">23-24周</div>
+                            <div class="timeline-title">时间生态系统设计<span class="priority-indicator priority-medium">中等</span></div>
+                            <div class="timeline-description">设计多层次时间性体验，包括实时、历史和预测时间</div>
+                            <div class="timeline-deliverables">交付: 时间模型概念图 + 技术方案</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第三季度 -->
+                <div class="timeline-quarter">
+                    <div class="quarter-label">第三季度</div>
+                    <div class="quarter-items">
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">25-27周</div>
+                            <div class="timeline-title">五行景观引擎进阶开发<span class="priority-indicator priority-high">优先</span></div>
+                            <div class="timeline-description">实现参数化景观生成系统，连接用户行动数据</div>
+                            <div class="timeline-deliverables">交付: 参数化景观生成器 + 技术演示</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">28-30周</div>
+                            <div class="timeline-title">组件间数据传递系统</div>
+                            <div class="timeline-description">开发组件之间的数据交换机制，确保系统整合</div>
+                            <div class="timeline-deliverables">交付: API设计 + 集成演示</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">31-33周</div>
+                            <div class="timeline-title">元叙事概念片段制作<span class="priority-indicator priority-medium">中等</span></div>
+                            <div class="timeline-description">创作关键场景视频，展示系统核心体验和哲学</div>
+                            <div class="timeline-deliverables">交付: 1-2个关键场景视频 + 分镜</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">34-36周</div>
+                            <div class="timeline-title">用户旅程可视化</div>
+                            <div class="timeline-description">创建用户在系统中的体验流程图和互动路径</div>
+                            <div class="timeline-deliverables">交付: 交互流程图 + 演示视频</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 第四季度 -->
+                <div class="timeline-quarter">
+                    <div class="quarter-label">第四季度</div>
+                    <div class="quarter-items">
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">37-40周</div>
+                            <div class="timeline-title">设计文档编写<span class="priority-indicator priority-high">优先</span></div>
+                            <div class="timeline-description">完成系统完整设计文档，记录技术路径和理念</div>
+                            <div class="timeline-deliverables">交付: 系统文档 + 技术路径图</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">41-43周</div>
+                            <div class="timeline-title">网站内容完善与优化</div>
+                            <div class="timeline-description">更新网站内容，优化用户体验，收集反馈</div>
+                            <div class="timeline-deliverables">交付: 更新网站 + 用户测试报告</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">44-46周</div>
+                            <div class="timeline-title">申请材料整合<span class="priority-indicator priority-medium">中等</span></div>
+                            <div class="timeline-description">将项目整合为MIT申请材料，校准作品集内容</div>
+                            <div class="timeline-deliverables">交付: MIT申请文书 + 作品集</div>
+                        </div>
+                        
+                        <div class="timeline-item">
+                            <div class="timeline-dot"></div>
+                            <div class="timeline-date">47-52周</div>
+                            <div class="timeline-title">提交准备与未来规划</div>
+                            <div class="timeline-description">最终审核材料，制定项目未来发展规划</div>
+                            <div class="timeline-deliverables">交付: 申请提交 + 发展计划</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- MIT申请文书部分 -->
+        <div class="application-section animate-fade-up">
+            <div class="application-header">
+                <h2 class="application-title">MIT Media Lab MAS学位申请计划</h2>
+                <div class="application-accent"></div>
+                <p class="application-subtitle">敬畏感工程：设计超越竞争的未来</p>
+            </div>
+            
+            <div class="application-columns">
+                <div class="application-column">
+                    <h3 class="column-title">愿景</h3>
+                    <div class="column-content">
+                        <p>如果我们能"工程化"心理学家 Dacher Keltner 描述的那种——"置身于超越理解的浩瀚存在"时所涌现出的敬畏感——作为对抗当下成就导向环境中日益加剧的集体倦怠的解药，会是怎样的局面？</p>
+                        
+                        <p>在 AGI 临界到来的关键时刻，潜在的大规模失业正威胁着劳动市场的稳定。DeepSeek、AlphaGo 等基于强化学习开发的 AI 系统已将人类从决策链中剔除，清楚表明在纯粹以表现为导向的竞争中，人类参与变得可有可无。</p>
+                        
+                        <div class="quote">
+                            我们的社会剧本正批量制造疲劳：扰乱日常生活的高昂、破坏性极强的临床治疗；沉重的教育债务与不妥协的指标扼杀了探索的乐趣；以及那些被赞誉的掠夺性职场，迫使我们披上职业面具，专横地压制真实自我。
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="application-column">
+                    <h3 class="column-title">行动</h3>
+                    <div class="column-content">
+                        <p>"野山道场"重新诠释了传统的五行（金：效率、木：健康、水：专注、火：情感、土：定力），但它绝非简单的人格分类工具，而是一种动态的视觉语言，将抽象的潜能化作切实的行动模式。这套系统犹如一座灵修学堂，由三个相互连接的组件构成：</p>
+                        
+                        <p><strong>行动卡片系统</strong>不再为提高单纯生产力而设计，这套标准操作程序邀请用户依据五行理念创设、整理并分享微小行动——无论是一杯清水、一段散步，还是简单的五次深蹲。</p>
+                        
+                        <p><strong>AR山水引擎</strong>灵感取自中国山水画的意境，此引擎构筑出一个"时间概率海"——当我们由稀缺转向充盈，抽象的时间便幻化为山谷、峰峦与流动的河道。</p>
+                        
+                        <p><strong>非玩家神灵对话框架</strong>借鉴我总结的"FAAA模型"（恐惧–敬畏–肯定–行动），这些仿若神祗的导师在对话中以敬畏为关键情感，促使固化的思维得以松动。</p>
+                    </div>
+                </div>
+                
+                <div class="application-column">
+                    <h3 class="column-title">愿景</h3>
+                    <div class="column-content">
+                        <p>曾几何时，我梦见自己被牵引至悬崖边，眼见朋友们轻盈地穿行于悬绳之间，而我却驻足彷徨，不知如何跨越那看似无法逾越的鸿沟。十二年前，当我因那部由1440帧手绘连贯组成、探讨濒死体验的短片而陷入创作瘫痪时，我既徘徊于自我怀疑，又在绘制第四维空间的过程中找到了突破。</p>
+                        
+                        <p>如今，在"野山道场"的试验影片中，我再次站在理想与现实的分界线上。利用程序生成与AI辅助的视觉技术，我的三分钟概念动画正试图展示：如何从固化的成就剧场中跳脱出来，迈向那由五行之美不断演化构建的广阔世界。</p>
+                        
+                        <div class="quote">
+                            我寻求在Media Lab的不仅是技术资源的支持，而是进入一个志同道合者的社区——在那里，我们愿意一起重新编程如何看待时间、成就与归属，共同设计出打破现有垄断结构、治愈稀缺思维裂痕的未来。让我们携手同行，共同书写一段无需计分、充满无限可能的游戏人生。
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 路径导航 -->
+        <div class="path-guide animate-fade-up">
+            <h2 class="section-title">导览路径</h2>
+            <p class="path-intro">网站提供两种探索路径，满足不同访客的需求与兴趣</p>
+
+            <div class="path-grid">
+                <!-- 系统设计路径 -->
+                <div class="path-card animate-fade-up delay-1">
+                    <div class="path-header">
+                        <h3 class="path-title">系统设计路径</h3>
+                    </div>
+                    <div class="path-steps">
+                        <div class="path-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <div class="step-heading">系统全景</div>
+                                <div class="step-description">了解野山道场的整体概念和设计哲学</div>
+                            </div>
+                        </div>
+                        <div class="path-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <div class="step-heading">核心组件</div>
+                                <div class="step-description">深入探索四大核心模块的设计与功能</div>
+                            </div>
+                        </div>
+                        <div class="path-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <div class="step-heading">研究实验室</div>
+                                <div class="step-description">了解技术原型和设计实验过程</div>
+                            </div>
+                        </div>
+                        <div class="path-step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <div class="step-heading">资源与连接</div>
+                                <div class="step-description">探索理论基础和参考资料</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 创作者叙事路径 -->
+                <div class="path-card animate-fade-up delay-2">
+                    <div class="path-header">
+                        <h3 class="path-title">创作者叙事路径</h3>
+                    </div>
+                    <div class="path-steps">
+                        <div class="path-step">
+                            <div class="step-number">1</div>
+                            <div class="step-content">
+                                <div class="step-heading">元叙事剧场</div>
+                                <div class="step-description">了解创作者背景和项目缘起</div>
+                            </div>
+                        </div>
+                        <div class="path-step">
+                            <div class="step-number">2</div>
+                            <div class="step-content">
+                                <div class="step-heading">系统全景</div>
+                                <div class="step-description">探索如何将个人经历转化为系统设计</div>
+                            </div>
+                        </div>
+                        <div class="path-step">
+                            <div class="step-number">3</div>
+                            <div class="step-content">
+                                <div class="step-heading">研究实验室</div>
+                                <div class="step-description">见证设计过程和思考演变</div>
+                            </div>
+                        </div>
+                        <div class="path-step">
+                            <div class="step-number">4</div>
+                            <div class="step-content">
+                                <div class="step-heading">核心组件</div>
+                                <div class="step-description">欣赏具体设计成果</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 全部JavaScript代码
+        document.addEventListener('DOMContentLoaded', function() {
+            // 创建时间刻度
+            const timeMarkers = document.getElementById('time-markers');
+            
+            // 创建24小时刻度
+            for (let i = 0; i < 24; i++) {
+                const deg = (i / 24) * 360;
+                const radians = (deg - 90) * (Math.PI / 180);
+                const radius = 148;
+                
+                // 创建刻度线
+                const marker = document.createElement('div');
+                marker.className = 'time-marker';
+                marker.style.left = '50%';
+                marker.style.bottom = '50%';
+                marker.style.transform = `rotate(${deg}deg) translateY(-${radius}px)`;
+                timeMarkers.appendChild(marker);
+                
+                // 创建4小时间隔的时间标签
+                if (i % 4 === 0) {
+                    const label = document.createElement('div');
+                    label.className = 'time-label';
+                    
+                    // 计算标签位置
+                    const labelRadius = 130;
+                    const x = Math.cos(radians) * labelRadius;
+                    const y = Math.sin(radians) * labelRadius;
+                    
+                    label.style.left = `calc(50% + ${x}px)`;
+                    label.style.top = `calc(50% + ${y}px)`;
+                    label.style.transform = 'translate(-50%, -50%)';
+                    
+                    // 格式化时间
+                    const hours = i.toString().padStart(2, '0');
+                    label.textContent = `${hours}:00`;
+                    
+                    timeMarkers.appendChild(label);
+                }
+            }
+            
+            // 观察滚动动画
+            const observer = new IntersectionObserver((entries) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        entry.target.style.animationPlayState = 'running';
+                        observer.unobserve(entry.target);
+                    }
+                });
+            }, {
+                threshold: 0.1
+            });
+            
+            // 应用到所有需要动画的元素
+            document.querySelectorAll('.animate-fade-up').forEach(el => {
+                observer.observe(el);
+            });
+            
+            // 主题切换功能
+            const themes = [
+                {
+                    name: "黎明",
+                    gradientTop: "#e6e9f0",
+                    gradientMiddle: "#d5e1ed",
+                    gradientBottom: "#c9d6df",
+                    accentPrimary: "rgba(183, 206, 219, 0.7)",
+                    accentSecondary: "rgba(214, 219, 227, 0.7)",
+                    accentTertiary: "rgba(163, 187, 219, 0.4)"
+                },
+                {
+                    name: "正午",
+                    gradientTop: "#f5f7fa",
+                    gradientMiddle: "#e8eef5",
+                    gradientBottom: "#d5e3f0",
+                    accentPrimary: "rgba(175, 195, 230, 0.7)",
+                    accentSecondary: "rgba(215, 225, 245, 0.7)",
+                    accentTertiary: "rgba(185, 205, 240, 0.4)"
+                },
+                {
+                    name: "黄昏",
+                    gradientTop: "#f2e9e4",
+                    gradientMiddle: "#f5e1d3",
+                    gradientBottom: "#e7c9b9",
+                    accentPrimary: "rgba(244, 182, 121, 0.7)",
+                    accentSecondary: "rgba(231, 212, 185, 0.7)",
+                    accentTertiary: "rgba(226, 156, 143, 0.4)"
+                },
+                {
+                    name: "暮色",
+                    gradientTop: "#e3dbe5",
+                    gradientMiddle: "#d3cbdb",
+                    gradientBottom: "#abb4ce",
+                    accentPrimary: "rgba(180, 170, 205, 0.7)",
+                    accentSecondary: "rgba(193, 185, 215, 0.7)",
+                    accentTertiary: "rgba(160, 160, 195, 0.4)"
+                }
+            ];
+            
+            const themeSlider = document.getElementById('themeSlider');
+            const themeName = document.getElementById('themeName');
+            
+            // 根据滑块值切换主题
+            function updateTheme() {
+                const themeIndex = parseInt(themeSlider.value);
+                const theme = themes[themeIndex];
+                
+                // 更新主题名称
+                themeName.textContent = theme.name;
+                
+                // 更新CSS变量
+                document.documentElement.style.setProperty('--gradient-top', theme.gradientTop);
+                document.documentElement.style.setProperty('--gradient-middle', theme.gradientMiddle);
+                document.documentElement.style.setProperty('--gradient-bottom', theme.gradientBottom);
+                document.documentElement.style.setProperty('--accent-primary', theme.accentPrimary);
+                document.documentElement.style.setProperty('--accent-secondary', theme.accentSecondary);
+                document.documentElement.style.setProperty('--accent-tertiary', theme.accentTertiary);
+            }
+            
+            // 初始化主题
+            updateTheme();
+            
+            // 监听滑块值变化
+            themeSlider.addEventListener('input', updateTheme);
+            
+            // 添加任务条拖拽功能
+            function initTaskBarDragging() {
+                const taskBars = document.querySelectorAll('.gantt-task-bar');
+                let activeBar = null;
+                let initialX = 0;
+                let initialLeft = 0;
+                const containerWidth = 12 * 100; // 12个月，每个月大约100px宽度
+                
+                taskBars.forEach(bar => {
+                    // 拖拽开始
+                    bar.addEventListener('dragstart', function(e) {
+                        activeBar = this;
+                        initialX = e.clientX;
+                        initialLeft = parseInt(this.style.left);
+                        
+                        // 设置拖拽时的半透明效果
+                        this.style.opacity = '0.6';
+                        
+                        // 允许移动效果
+                        e.dataTransfer.effectAllowed = 'move';
+                        
+                        // 创建一个透明拖拽图像
+                        const img = new Image();
+                        e.dataTransfer.setDragImage(img, 0, 0);
+                    });
+                    
+                    // 拖拽过程中
+                    bar.addEventListener('drag', function(e) {
+                        if (!e.clientX) return; // 忽略无效的拖拽事件
+                        
+                        let offsetX = e.clientX - initialX;
+                        let newLeft = initialLeft + offsetX;
+                        
+                        // 限制在容器范围内
+                        newLeft = Math.max(0, Math.min(newLeft, containerWidth - parseInt(this.style.width)));
+                        
+                        this.style.left = `${newLeft}px`;
+                    });
+                    
+                    // 拖拽结束
+                    bar.addEventListener('dragend', function() {
+                        this.style.opacity = '0.85';
+                        
+                        // 将位置吸附到最近的网格
+                        const gridSize = 33; // 每个月的宽度
+                        const currentLeft = parseInt(this.style.left);
+                        const snappedLeft = Math.round(currentLeft / gridSize) * gridSize;
+                        
+                        this.style.left = `${snappedLeft}px`;
+                    });
+                });
+                
+                // 允许任务条容器接收拖拽
+                const taskContainers = document.querySelectorAll('.gantt-task-bar-container');
+                taskContainers.forEach(container => {
+                    container.addEventListener('dragover', function(e) {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                    });
+                    
+                    container.addEventListener('drop', function(e) {
+                        e.preventDefault();
+                    });
+                });
+            }
+            
+            // 初始化任务条拖拽
+            initTaskBarDragging();
+        });
+    </script>
+</body>
+</html>
